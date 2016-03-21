@@ -81,11 +81,7 @@
                         </div>
                         <div class="col-sm-6"></div>
                     </div>
-                     <div class="row">
-                          Do you have any pending cases?
-                            <input type="checkbox" ng-model="person.pendingCase">
-
-                     </div>
+                     
 
                 </div>
             </div>
@@ -95,7 +91,11 @@
                 <div >
 
                     <h3>Criminal and Arrest Records</h3>
+<div class="row">
+                          Do you have any pending cases?
+                            <input type="checkbox" ng-model="person.pendingCase">
 
+                     </div>
                     <div class="row">
                         <div class="col-sm-5">
                             <div class="panel panel-default" style="max-width: 380px">
@@ -123,7 +123,18 @@
                                             <input type="radio" name="mtradio" value="Eligible" ng-model="newRecord.MisdemeanorType">Eligible
                                         </label>                                                                               
                                     </div>
-                                    
+                                                          
+                                    <div class="form-group" ng-show="newRecord.itemType == 'Felony'">
+                                        <label >Felony Type: </label>                                    
+
+                                        <label class="radio-inline">
+                                            <input type="radio" name="flradio" value="Eligible" ng-model="newRecord.FelonyType">Felony BRA
+                                        </label>
+                                        <label class="radio-inline">
+                                            <input type="radio" name="flradio" value="Ineligible" ng-model="newRecord.FelonyType">Other Felony 
+                                        </label>
+                                                                                                                    
+                                    </div>
                                     
 
                                     <div class="form-group">
@@ -172,26 +183,62 @@
                             </div></div>        
                         <div class="col-sm-7">
                             
-                            <table class="table table-responsive table-condensed table-striped" style="max-width: 800px ">
+    <table class="table table-responsive table-condensed table-striped table-hover" style="max-width: 800px ">
     <thead>
         <tr>
+            <th></th>
             <th>Charge Type</th>
             <th>Papered</th>
             <th>Date Off-Papers</th>
             <th>Eligibility</th>
         </tr>
     </thead>
-    <tr ng-repeat="record in records | orderBy: '-fullDate' ">
+    <tr ng-repeat-start="record in records"  ng-click="record.expanded = !record.expanded" class="{{ record.resultClass }}">
+        <td>
+           <span ng-show="!record.expanded">
+               <i class="glyphicon glyphicon-plus"></i>
+           </span> 
+           
+           <span ng-show="record.expanded">
+               <i class="glyphicon glyphicon-minus"></i>
+           </span> 
+            </td>
         <td>
             <span ng-show="record.itemType == 'Misdemeanor'">
-            {{ record.MisdemeanorType }} -     
+            {{ record.MisdemeanorType }}     
             </span>
-            {{ record.itemType }} - {{ record.convictionStatus }} </td>
+            {{ record.itemType }} - {{ record.convictionStatus }} 
+        </td>
         <td>{{ record.papered }}</td>
         <td>{{ record.fullDate | date:'MM/dd/yyyy' }}</td>
         <td>{{ record.eligibility }}</td>
     </tr>
+    <tr ng-repeat-end ng-show="record.expanded">
+        <td colspan="5" >
+            <p> 
+                <dl class="dl-horizontal">
+                    <dt>Here's why: </dt>
+                    <dd>{{ record.explanation }}</dd>
+                    
+                    <dt>Related Law:</dt>
+                    <dd>{{ record.lawCode }}</dd>
+                    
+                    <dt> Exception:</dt>
+                    <dd>{{ record.exception }}</dd>
+                    
+                    <dt></dt>
+                    <dd></dd>
+                    
+                </dl>
+                
+                </p>
+        </td>
+
+    </tr>
+    
+    
 </table>
+
                         </div>
                     </div>
                 </div>

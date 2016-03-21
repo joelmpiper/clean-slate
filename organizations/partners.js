@@ -1,7 +1,7 @@
 Parse.initialize("BbjrthNLZ49b6pQ1hvYCUc9RATqUleRw4on1uPwV", "WjBd5QzC1t5Q6JnEuI4uJU38tkL7h5PzUzZnhmxO");
 
 //Define an angular module for our app
-var sampleApp = angular.module('sampleApp', [])
+var sampleApp = angular.module('sampleApp', ['ngRoute'])
 .run(['$rootScope', function($scope) {
   $scope.currentUser = Parse.User.current();
  
@@ -306,7 +306,12 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
         $scope.convictions = [];
         $scope.hasMDQconvictions = false;
      
-        $scope.addRecordItem = function () {
+        $scope.addRecordItem = function () 
+        
+        {
+        
+         $scope.newRecord.expanded = false;
+         
         
         /*          
             if(!($scope.newRecord.itemDate.month == null) && !($scope.newRecord.itemDate.day == null) && !($scope.newRecord.itemDate.year == null))
@@ -327,7 +332,7 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
                  newConviction.offDate = $scope.newRecord.dispDate;
                  newConviction.eligibilityDate = $scope.newRecord.dispDate;
                  
-                 if($scope.newRecord.itemType === 'Felony')
+                 if($scope.newRecord.itemType === 'Felony' && $scope.newRecord.felonyType === 'Ineligible')
                  {
                     newConviction.eligibilityDate.year = (parseInt($scope.newRecord.dispDate.year) + 10).toString();
                     $scope.hasMDQconvictions = true;
@@ -349,6 +354,7 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
             $scope.checkEligibility();
            
             console.log($scope.newRecord);
+           
             $scope.newRecord = {};
         }
      
@@ -403,82 +409,194 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
         {
             var eligibilityDate = item.dispDate;
             item.eligibility = '';
-            
+            item.justifications = [];
+                    
             if($scope.person.pendingCase === true)
             {
                 item.eligibility = 'Ineligible - Due to Pending Case';
                 eligibilityDate.year = 0;
+                
+                var newJustifications = {};
+                newJustifications.explanation = "Your pending case must be completed before you can seal.";
+                newJustifications.lawCode = "16-801(5)(B)";
+                newJustifications.exception = "N/A";
+                item.justifications.push(newJustifications);
             }
-            else if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Felony')
+            
+            if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Felony' &&  item.FelonyType === 'Ineligible')
             {
                  item.eligibility = 'Ineligible - Felony Conviction';
                  eligibilityDate.year = 0;
+                 
+                var newJustifications = {};
+                newJustifications.explanation = "Ineligible Felonies are never eligible unless Bail Reform Act.";
+                newJustifications.lawCode = "N/A";
+                newJustifications.exception = "N/A";
+                item.justifications.push(newJustifications);
+           
             }
             else if(item.convictionStatus === 'Non-Conviction' &&  item.itemType === 'Felony')
             {
                 if(item.papered === 'No')
                 {
                     eligibilityDate.year = (parseInt(item.dispDate.year) + 3);
-                  
-                    if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
-                    	    eligibilityDate = convictionEligibilityDate;            
+
+                    var newJustifications = {};
+                    newJustifications.explanation = "You can seal this crime three years since off papers";
+                    newJustifications.lawCode = "16-803(b)(1)(A)";
+                    newJustifications.exception = "N/A";   
+                    item.justifications.push(newJustifications);
                 }
                 else if(item.papered === 'Yes')
                 {
                     eligibilityDate.year = (parseInt(item.dispDate.year) + 4);
-                    
-                    if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
-                    	    eligibilityDate = convictionEligibilityDate;       
+                 
+                    var newJustifications = {};
+                    newJustifications.explanation = "You can seal this crime four years since off papers";
+                    newJustifications.lawCode = "16-803(b)(1)(A)";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
                 }
+                
+                if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
+                 {
+                     
+                    eligibilityDate = convictionEligibilityDate;       
+                    
+                    var newJustifications = {};
+                    newJustifications.explanation = "Your conviction adds 5 - 10 years to waiting period.";
+                    newJustifications.lawCode = "16-803(b)(2)(A)/(B)";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
+                 }               
+       
             }
+                
+            
             else if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Misdemeanor' && item.MisdemeanorType === 'Ineligible')
             {
                  item.eligibility = 'Ineligible - Misemeanor Conviction';
                  eligibilityDate.year = 0;
-            }
+        
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";    
+        }
             else if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Misdemeanor' && item.MisdemeanorType === 'Eligible')
             {
-               eligibilityDate.year = (parseInt(item.dispDate.year) + 8);
-                
                 if(($scope.hasMDQconvictions) || $scope.findDConvictions(item.dispDate))
                 {  
                     item.eligibility = 'Ineligible due to another Conviction';
                     eligibilityDate.year = 0;
+                    
+                    
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
+                }
+                else
+                {
+                  
+               eligibilityDate.year = (parseInt(item.dispDate.year) + 8);
+                  
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
                 }
             }
             else if(item.convictionStatus === 'Non-Conviction' &&  item.itemType === 'Misdemeanor' &&  item.MisdemeanorType === 'Eligible')
             {
-                eligibilityDate.year = (parseInt(item.dispDate.year) + 2);
-                
+                 
                 if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
-                        eligibilityDate = convictionEligibilityDate;            
-            }
+                {      
+                    eligibilityDate = convictionEligibilityDate;  
+                    
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";        
+                } 
+                else
+                {
+                    eligibilityDate.year = (parseInt(item.dispDate.year) + 2);
+                                      
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
+                } 
+        }
             
             else if(item.convictionStatus === 'Non-Conviction' &&  item.itemType === 'Misdemeanor' &&  item.MisdemeanorType === 'Ineligible')
             {
                 if(item.papered === 'No')
                 {
-                    eligibilityDate.year = (parseInt(item.dispDate.year) + 3);
-                  
+                    
                     if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
-                    	    eligibilityDate = convictionEligibilityDate;            
+                    {
+                        eligibilityDate = convictionEligibilityDate;     
+                        
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";       
+                    }
+                    else
+                    {
+                        eligibilityDate.year = (parseInt(item.dispDate.year) + 3);
+                        
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
+                    }
                 }
                 else if(item.papered === 'Yes')
                 {
-                    eligibilityDate.year = (parseInt(item.dispDate.year) + 4);
                     
                     if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
-                    	    eligibilityDate = convictionEligibilityDate;       
+                 {   	    
+                     eligibilityDate = convictionEligibilityDate;
+                     
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";   
+                } 
+                else
+                {
+                   eligibilityDate.year = (parseInt(item.dispDate.year) + 4);
+                   
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
+                     
+                }   
                 }
             }
             else
             {
                 item.eligibility = 'Pending';
+                
+                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
+                item.lawCode = "16-801(5)(B)";
+                item.exception = "N/A";
             }
             
             if(item.eligibility === '' && parseInt(eligibilityDate.year) > 0)
+            {
                 item.eligibility = 'Eligible for sealing in ' + eligibilityDate.year;
-            
+                
+                
+                if(new Date().getFullYear() >= parseInt(eligibilityDate.year) )
+                    item.resultClass = "success";
+                else
+                    item.resultClass = "warning";
+                    
+                    console.log(new Date().getFullYear() <= parseInt(eligibilityDate.year) );
+                    console.log(new Date().getFullYear());
+                    console.log(parseInt(eligibilityDate.year) );
+                
+            }
+            else
+            {
+                item.resultClass = "danger";
+            }
         });
          
         }
