@@ -289,7 +289,7 @@ sampleApp.controller('questionController', function ($scope, $http, $location, s
 
 sampleApp.controller('RecordsController', function ($scope, $routeParams, sharedService) {
     
-            //Initialize form with basic data for person
+        //Initialize form with basic data for person
         $scope.person = {};
         $scope.person.first = "John";
         $scope.person.middle = "Jay";
@@ -309,14 +309,8 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
         $scope.addRecordItem = function () 
         
         {
-        
          $scope.newRecord.expanded = false;
-         
         
-        /*          
-            if(!($scope.newRecord.itemDate.month == null) && !($scope.newRecord.itemDate.day == null) && !($scope.newRecord.itemDate.year == null))
-                $scope.newRecord.itemDate.full = $scope.newRecord.itemDate.month + "/" + $scope.newRecord.itemDate.day + "/" + $scope.newRecord.itemDate.year;
-          */
             if(!($scope.newRecord.dispDate.month == null) && !($scope.newRecord.dispDate.day == null) && !($scope.newRecord.dispDate.year == null))
             {   
             $scope.newRecord.dispDate.full = $scope.newRecord.dispDate.month + "/" + $scope.newRecord.dispDate.day + "/" + $scope.newRecord.dispDate.year;
@@ -400,8 +394,9 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
      
         $scope.checkEligibility = function () {
          
-         var convictionEligibilityDate = {};
-            
+         //This variable will hold the earliest date for eligibility sealing
+         var convictionEligibilityDate = {}; 
+         
          if($scope.convictions.length > 0);
             convictionEligibilityDate = $scope.findConvictionDate();
          
@@ -468,9 +463,7 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
                     newJustifications.lawCode = "16-803(b)(2)(A)/(B)";
                     newJustifications.exception = "N/A";
                     item.justifications.push(newJustifications);
-                 }               
-       
-            }
+                 }               }
                 
             
             else if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Misdemeanor' && item.MisdemeanorType === 'Ineligible')
@@ -478,10 +471,12 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
                  item.eligibility = 'Ineligible - Misemeanor Conviction';
                  eligibilityDate.year = 0;
         
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";    
-        }
+                var newJustifications = {};
+                newJustifications.explanation = "Ineligible Misdemeanor Convictions are never eligible for sealing.";
+                newJustifications.lawCode = "16-803(c)";
+                newJustifications.exception = "N/A";
+                item.justifications.push(newJustifications);
+             }
             else if(item.convictionStatus === 'Conviction' &&  item.itemType === 'Misdemeanor' && item.MisdemeanorType === 'Eligible')
             {
                 if(($scope.hasMDQconvictions) || $scope.findDConvictions(item.dispDate))
@@ -489,62 +484,80 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
                     item.eligibility = 'Ineligible due to another Conviction';
                     eligibilityDate.year = 0;
                     
-                    
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";
+                    var newJustifications = {};
+                    newJustifications.explanation = "This can never be sealed due to another conviction on your record.";
+                    newJustifications.lawCode = "16-801(5)(c)";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
+                }
+                else if (5 < 4) //Must add logic to check for any convictions after current conviction
+                {
+                    var newJustifications = {};
+                    newJustifications.explanation = "This can never be sealed due to a subsequent conviction on your record.";
+                    newJustifications.lawCode = "16-803(c)(2); 16-801(5)(A) ";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
                 }
                 else
                 {
-                  
-               eligibilityDate.year = (parseInt(item.dispDate.year) + 8);
-                  
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";
-                }
-            }
+                    eligibilityDate.year = (parseInt(item.dispDate.year) + 8);
+
+                    var newJustifications = {};
+                    newJustifications.explanation = "This can be sealed after an 8 year waiting period.";
+                    newJustifications.lawCode = "16-801(5)(c)";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
+                }}
+            
             else if(item.convictionStatus === 'Non-Conviction' &&  item.itemType === 'Misdemeanor' &&  item.MisdemeanorType === 'Eligible')
             {
                  
                 if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
                 {      
                     eligibilityDate = convictionEligibilityDate;  
-                    
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";        
+                   
+                    var newJustifications = {};
+                    newJustifications.explanation = "Your other conviction will add 5-10 years to the waiting period.";
+                    newJustifications.lawCode = "16-803(a)(2)(A) ; 16-803(a)(2)(B)";
+                    newJustifications.exception = "N/A";
+                    item.justifications.push(newJustifications);
+    
                 } 
                 else
                 {
                     eligibilityDate.year = (parseInt(item.dispDate.year) + 2);
-                                      
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";
-                } 
+                 
+                    var newJustifications = {};
+                    newJustifications.explanation = "Your eligible misdemeanor conviction can be sealed after a 2 year waiting period.";
+                    newJustifications.lawCode = "16-803(a)(1)(A)";
+                    newJustifications.exception = "If non-conviction because Deferred Sentencing Agreement, cannot be expunged if you have any misdemeanor or felony conviction";
+                    item.justifications.push(newJustifications);        } 
         }
             
             else if(item.convictionStatus === 'Non-Conviction' &&  item.itemType === 'Misdemeanor' &&  item.MisdemeanorType === 'Ineligible')
             {
                 if(item.papered === 'No')
-                {
-                    
+                {                    
                     if($scope.convictions.length > 0 && parseInt(convictionEligibilityDate.year) > parseInt(eligibilityDate.year))
                     {
                         eligibilityDate = convictionEligibilityDate;     
                         
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";       
+                        var newJustifications = {};
+                        newJustifications.explanation = "This can never be sealed due to a subsequent conviction on your record.";
+                        newJustifications.lawCode = "16-803(b)(2)(A); 16-803(b)(2)(B) ";
+                        newJustifications.exception = "N/A";
+                        item.justifications.push(newJustifications);
                     }
                     else
                     {
                         eligibilityDate.year = (parseInt(item.dispDate.year) + 3);
                         
-                item.explanation = "Your pending case must be completed before the court will allow you to seal.";
-                item.lawCode = "16-801(5)(B)";
-                item.exception = "N/A";
+                            var newJustifications = {};
+                        newJustifications.explanation = "This misdemeanor can be sealed after a 3 year waiting period.";
+                        newJustifications.lawCode = "16-803(b)(1)(A)";
+                        newJustifications.exception = "If non-conviction because Deferred Sentencing Agreement, cannot be expunged if you have any misdemeanor or felony conviction";
+                
+                        item.justifications.push(newJustifications);
                     }
                 }
                 else if(item.papered === 'Yes')
@@ -597,8 +610,12 @@ sampleApp.controller('RecordsController', function ($scope, $routeParams, shared
             {
                 item.resultClass = "danger";
             }
+            
+            
+            console.log(item);
         });
          
+         console.log($scope.records);
         }
      
         $scope.dispositionOptions = [
